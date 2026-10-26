@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Crédit Agricole — Clients at Risk Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+#emcar{--ink:#14202E;--paper:#F1F4F8;--card:#FFFFFF;--line:#E2E8F0;--line2:#EDF1F6;--muted:#6A7B8C;--ink2:#34465C;--faint:#9AA9B8;
+ --bank:#00857D;--headAccent:#3FC3B6;--promo:#1E9C6A;--pass:#D89A00;--detr:#C8463D;--amber:#A87800;
+ --shadow:0 1px 2px rgba(20,32,46,.04),0 6px 24px rgba(20,32,46,.06);
+ background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;}
+#emcar *{box-sizing:border-box}
+#emcar .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+#emcar h1,#emcar h2,#emcar h3{font-family:"Archivo","IBM Plex Sans",sans-serif;margin:0;letter-spacing:-.01em;}
+#emcar .wrap{max-width:1160px;margin:0 auto;padding:0 22px 80px;}
+#emcar button{font-family:inherit}
+
+/* header */
+#emcar .hdr{background:var(--ink);color:#fff;padding:22px 0 20px;}
+#emcar .hbar{max-width:1160px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;}
+#emcar .brand .ey{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#7E93A8;font-weight:600;}
+#emcar .brand h1{font-size:25px;font-weight:800;margin-top:5px;line-height:1.05;}
+#emcar .brand h1 b{color:var(--headAccent);font-weight:800;}
+#emcar .brand .sub{color:#9DB0C4;font-size:12.5px;margin-top:6px;max-width:640px;line-height:1.5;}
+#emcar .heroKPI{display:flex;gap:28px;align-items:flex-end;}
+#emcar .kpi .lab{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:#7E93A8;font-weight:600;}
+#emcar .kpi .val{font-family:"Archivo";font-weight:800;font-size:30px;line-height:1;margin-top:4px;}
+#emcar .kpi .val.pos{color:#5FE3A6;}#emcar .kpi .val.neg{color:#FF8A7E;}#emcar .kpi .val.risk{color:#FFB4A9;}
+
+/* caveat */
+#emcar .caveat{background:#FFF8E6;border-bottom:1px solid #F1DFA8;color:#6B5310;font-size:12.5px;line-height:1.5;}
+#emcar .caveat .in{max-width:1160px;margin:0 auto;padding:10px 22px;display:flex;gap:10px;align-items:flex-start;}
+#emcar .caveat .ic{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:#E9B83A;color:#fff;font:700 12px/18px "Archivo";text-align:center;margin-top:1px;}
+#emcar .caveat b{color:#4E3C08;}
+
+/* filters */
+#emcar .filters{position:sticky;top:0;z-index:30;background:rgba(241,244,248,.95);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px 0 13px;margin-bottom:26px;}
+#emcar .frow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:14px;align-items:end;}
+@media(max-width:900px){#emcar .frow{grid-template-columns:1fr 1fr;}#emcar .filters{position:static;}}
+@media(max-width:520px){#emcar .frow{grid-template-columns:1fr;}}
+#emcar .flab{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px;display:block;}
+#emcar .ms{position:relative;}
+#emcar .msbtn{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--ink2);font:500 13px "IBM Plex Sans";padding:8px 12px;border-radius:9px;cursor:pointer;text-align:left;}
+#emcar .msbtn:hover{border-color:#B9C6D4;}
+#emcar .msbtn.act{border-color:var(--bank);box-shadow:inset 0 0 0 1px var(--bank);color:var(--ink);}
+#emcar .msbtn .v{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#emcar .msbtn .car{flex-shrink:0;width:8px;height:8px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(45deg) translateY(-2px);}
+#emcar .mspanel{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);min-width:230px;background:var(--card);border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 32px rgba(20,32,46,.16);z-index:40;padding:8px;}
+#emcar .ms.open .mspanel{display:block;}
+#emcar .mssearch{width:100%;border:1px solid var(--line);border-radius:7px;padding:6px 9px;font:13px "IBM Plex Sans";margin-bottom:6px;color:var(--ink);}
+#emcar .mssearch:focus{outline:2px solid var(--bank);outline-offset:0;border-color:transparent;}
+#emcar .msacts{display:flex;justify-content:space-between;padding:2px 4px 6px;border-bottom:1px solid var(--line2);margin-bottom:4px;}
+#emcar .msacts button{background:none;border:none;color:var(--bank);font:600 11.5px "IBM Plex Sans";cursor:pointer;padding:2px;}
+#emcar .mslist{max-height:260px;overflow-y:auto;}
+#emcar .msopt{display:flex;align-items:center;gap:9px;padding:6px 6px;border-radius:6px;font-size:13px;color:var(--ink2);cursor:pointer;}
+#emcar .msopt:hover{background:var(--line2);}
+#emcar .msopt input{accent-color:var(--bank);width:15px;height:15px;margin:0;}
+#emcar .resetbtn{border:1px solid var(--line);background:var(--card);color:var(--muted);font:600 11px "IBM Plex Sans";letter-spacing:.04em;text-transform:uppercase;padding:10px 14px;border-radius:9px;cursor:pointer;white-space:nowrap;}
+#emcar .resetbtn:hover{border-color:#B9C6D4;color:var(--ink2);}
+#emcar .fsum{font-size:11.5px;color:var(--muted);margin-top:9px;min-height:16px;}
+#emcar .fsum b{color:var(--ink2);font-weight:600;}
+
+/* sections */
+#emcar section{margin-bottom:38px;}
+#emcar .shead{display:flex;align-items:center;gap:13px;margin:0 0 4px;flex-wrap:wrap;}
+#emcar .snum{font-family:"Archivo";font-weight:800;font-size:13px;color:var(--bank);letter-spacing:.04em;border:1.5px solid var(--bank);border-radius:6px;padding:1px 7px;line-height:1.5;}
+#emcar .shead h2{font-size:19px;font-weight:700;}
+#emcar .shead .sp{flex:1}
+#emcar .sdesc{color:var(--muted);font-size:12.5px;margin:0 0 16px 40px;line-height:1.55;max-width:860px;}
+#emcar .btn{border:1px solid var(--line);background:var(--card);color:var(--ink2);font:600 12px "IBM Plex Sans";padding:7px 13px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;}
+#emcar .btn:hover{border-color:#B9C6D4;color:var(--ink);}
+#emcar .btn.pri{background:var(--ink);border-color:var(--ink);color:#fff;}
+#emcar .btn.pri:hover{background:#22344A;}
+#emcar .btn:disabled{opacity:.55;cursor:progress;}
+#emcar .btn svg{width:14px;height:14px;}
+#emcar .btngrp{display:flex;gap:8px;flex-wrap:wrap;}
+#emcar .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+
+/* exec summary */
+#emcar .exec{background:var(--paper);}
+#emcar .exhead{display:none;}
+#emcar .exporting .exhead{display:block;background:var(--ink);color:#fff;border-radius:14px;padding:18px 22px;margin-bottom:16px;}
+#emcar .exhead .ey{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#7E93A8;font-weight:600;}
+#emcar .exhead .t{font:800 21px "Archivo";margin-top:4px;}#emcar .exhead .t b{color:var(--headAccent);}
+#emcar .exhead .f{font-size:11.5px;color:#9DB0C4;margin-top:6px;line-height:1.5;}
+#emcar .exfoot{display:none;font-size:10.5px;color:#6B5310;background:#FFF8E6;border:1px solid #F1DFA8;border-radius:10px;padding:8px 12px;margin-top:14px;line-height:1.5;}
+#emcar .exporting .exfoot{display:block;}
+#emcar .egrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+@media(max-width:900px){#emcar .egrid{grid-template-columns:1fr;}}
+#emcar .ecard{padding:18px 20px 18px;display:flex;flex-direction:column;}
+#emcar .ecard .et{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+#emcar .ecard .eq{font-size:12px;color:var(--faint);margin-top:3px;line-height:1.4;min-height:34px;}
+#emcar .ehero{display:flex;align-items:baseline;gap:10px;margin:12px 0 14px;}
+#emcar .ehero .n{font:800 40px/1 "Archivo";}
+#emcar .ehero .u{font-size:12.5px;color:var(--muted);line-height:1.35;}
+#emcar .ehero .n.pos{color:var(--promo);}#emcar .ehero .n.neg{color:var(--detr);}#emcar .ehero .n.risk{color:var(--detr);}
+#emcar .sbar{display:flex;gap:2px;height:14px;border-radius:4px;overflow:hidden;background:var(--line2);margin-bottom:14px;}
+#emcar .sbar span{height:100%;}
+#emcar .sbar span:first-child{border-radius:4px 0 0 4px}#emcar .sbar span:last-child{border-radius:0 4px 4px 0}
+#emcar .lrows{display:flex;flex-direction:column;gap:8px;margin-top:auto;}
+#emcar .lrow{display:grid;grid-template-columns:12px 1fr auto 48px;gap:9px;align-items:center;font-size:13px;color:var(--ink2);}
+#emcar .lrow .sw{width:11px;height:11px;border-radius:3px;}
+#emcar .lrow .c{font:600 15px "IBM Plex Mono";color:var(--ink);text-align:right;}
+#emcar .lrow .p{font:500 11.5px "IBM Plex Mono";color:var(--faint);text-align:right;}
+#emcar .lrow.dim{opacity:.6}
+#emcar .hist{display:flex;flex-direction:column;gap:7px;margin-top:auto;}
+#emcar .hrow{display:grid;grid-template-columns:96px 1fr 30px;gap:9px;align-items:center;font-size:12px;color:var(--ink2);}
+#emcar .hrow .tr{height:11px;background:var(--line2);border-radius:3px;overflow:hidden;}
+#emcar .hrow .tr i{display:block;height:100%;border-radius:3px;background:#A9B8C8;}
+#emcar .hrow.hot .tr i{background:var(--detr);}
+#emcar .hrow .c{font:600 12.5px "IBM Plex Mono";text-align:right;}
+#emcar .lowbase{font-size:11px;color:var(--amber);background:#FFF8E6;border-radius:6px;padding:4px 8px;margin-top:12px;display:none;}
+#emcar .lowbase.on{display:block}
+#emcar .riskstrip{margin-top:16px;padding:16px 20px;display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;}
+@media(max-width:720px){#emcar .riskstrip{grid-template-columns:1fr;}}
+#emcar .riskstrip .rl .et{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+#emcar .riskstrip .rl .big{font:800 30px/1 "Archivo";margin-top:6px;}
+#emcar .riskstrip .rl .big small{font:500 12.5px "IBM Plex Sans";color:var(--muted);margin-left:6px;}
+#emcar .rtiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+@media(max-width:720px){#emcar .rtiles{grid-template-columns:1fr 1fr;}}
+#emcar .rt{border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+#emcar .rt .k{font-size:11px;color:var(--muted);line-height:1.3;}
+#emcar .rt .v{font:700 20px "IBM Plex Mono";margin-top:4px;}
+#emcar .rt.s3{border-color:rgba(200,70,61,.4);background:rgba(200,70,61,.05);}#emcar .rt.s3 .v{color:var(--detr);}
+#emcar .rt.s2{border-color:rgba(216,154,0,.45);background:rgba(216,154,0,.06);}#emcar .rt.s2 .v{color:var(--amber);}
+
+/* chips */
+#emcar .classchip{font:600 9.5px "IBM Plex Sans";letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:5px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+#emcar .classchip .s{font-family:"IBM Plex Mono";opacity:.85;}
+#emcar .classchip.det{background:rgba(200,70,61,.12);color:var(--detr);}
+#emcar .classchip.pas{background:rgba(216,154,0,.14);color:var(--amber);}
+#emcar .classchip.pro{background:rgba(30,156,106,.12);color:var(--promo);}
+#emcar .classchip.nor{background:var(--line2);color:var(--muted);}
+#emcar .sigs{display:flex;gap:5px;flex-wrap:wrap;}
+#emcar .sig{font:600 10.5px "IBM Plex Sans";padding:3px 8px;border-radius:999px;border:1px solid rgba(200,70,61,.35);color:var(--detr);background:rgba(200,70,61,.06);white-space:nowrap;}
+#emcar .prio{display:inline-flex;align-items:center;gap:7px;}
+#emcar .pdots{display:inline-flex;gap:3px;}
+#emcar .pdots i{width:8px;height:8px;border-radius:50%;background:var(--line);}
+#emcar .pdots i.on{background:var(--detr);}
+#emcar .plab{font:600 10px "IBM Plex Sans";letter-spacing:.06em;text-transform:uppercase;}
+#emcar .p3 .plab{color:var(--detr);}#emcar .p2 .plab{color:var(--amber);}#emcar .p1 .plab{color:var(--muted);}
+
+/* section 2 */
+#emcar .ddhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+#emcar .ddcount{font-size:12.5px;color:var(--muted);}#emcar .ddcount b{color:var(--ink);font-weight:700;}
+#emcar .tblwrap{overflow-x:auto;}
+#emcar table{width:100%;border-collapse:collapse;}
+#emcar thead th{font:600 10.5px "IBM Plex Sans";letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left;padding:13px 14px;border-bottom:1px solid var(--line);white-space:nowrap;}
+#emcar thead th.r,#emcar tbody td.r{text-align:right;}
+#emcar tbody td{padding:12px 14px;border-bottom:1px solid var(--line2);font-size:13.5px;vertical-align:middle;}
+#emcar tbody tr:last-child td{border-bottom:none;}
+#emcar tbody tr.cr{cursor:pointer;transition:background .12s;}
+#emcar tbody tr.cr:hover{background:#F7F9FB;}
+#emcar tbody tr.cr:focus-visible{outline:2px solid var(--bank);outline-offset:-2px;}
+#emcar tbody tr.cr.t3 td:first-child{box-shadow:inset 3px 0 0 var(--detr);}
+#emcar tbody tr.cr.t2 td:first-child{box-shadow:inset 3px 0 0 var(--pass);}
+#emcar .cname{font-weight:600;line-height:1.3;}
+#emcar .cmeta{font-size:11px;color:var(--faint);margin-top:2px;}
+#emcar .ent{font-size:12px;color:var(--ink2);white-space:nowrap;}
+#emcar .num{font:600 13.5px "IBM Plex Mono";}
+#emcar .num.bad{color:var(--detr);}
+#emcar .intent{font-size:12.5px;white-space:nowrap;}
+#emcar .intent.dec{color:var(--detr);font-weight:600;}#emcar .intent.inc{color:var(--promo);}
+#emcar .open{color:var(--bank);font:600 12px "IBM Plex Sans";white-space:nowrap;}
+#emcar .empty{padding:40px;text-align:center;color:var(--muted);font-size:13px;}
+
+/* drawer */
+#emcar .ov{position:fixed;inset:0;background:rgba(20,32,46,.42);z-index:90;display:none;}
+#emcar .ov.on{display:block;}
+#emcar .drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:var(--paper);z-index:91;transform:translateX(105%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(20,32,46,.18);}
+#emcar .drawer.on{transform:none;}
+@media(prefers-reduced-motion:reduce){#emcar .drawer{transition:none;}}
+#emcar .dhd{background:var(--ink);color:#fff;padding:18px 22px 16px;}
+#emcar .dhd .ey{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#7E93A8;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+#emcar .dhd .x{background:none;border:1px solid #33465C;color:#C3D0DD;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;}
+#emcar .dhd .x:hover{color:#fff;border-color:#7E93A8;}
+#emcar .dhd h3{font-size:20px;font-weight:800;margin-top:6px;line-height:1.2;word-break:break-word;}
+#emcar .dhd .dm{font-size:12px;color:#9DB0C4;margin-top:5px;}
+#emcar .dbody{flex:1;overflow-y:auto;padding:18px 22px 24px;display:flex;flex-direction:column;gap:14px;}
+#emcar .dcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+#emcar .dcard .dt{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;}
+#emcar .siglist{display:flex;flex-direction:column;gap:8px;}
+#emcar .sitem{display:grid;grid-template-columns:20px 1fr;gap:10px;align-items:start;font-size:13px;}
+#emcar .sitem .ck{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font:700 12px "Archivo";}
+#emcar .sitem.on .ck{background:var(--detr);color:#fff;}
+#emcar .sitem.off .ck{background:var(--line2);color:var(--faint);}
+#emcar .sitem.off{color:var(--faint);}
+#emcar .sitem .sd{font-size:11.5px;color:var(--muted);margin-top:2px;}
+#emcar .sitem.off .sd{color:var(--faint);}
+#emcar .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;}
+#emcar .dgrid .k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;}
+#emcar .dgrid .v{font-size:13px;color:var(--ink);margin-top:3px;line-height:1.35;}
+#emcar .lowl{display:flex;flex-direction:column;gap:9px;}
+#emcar .lowi{display:grid;grid-template-columns:1fr 120px 34px;gap:10px;align-items:center;}
+#emcar .lowi .nm{font-size:12.5px;line-height:1.3;}
+#emcar .lowi .nm small{display:block;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600;}
+#emcar .lowi .tr{height:10px;background:var(--line2);border-radius:3px;overflow:hidden;}
+#emcar .lowi .tr i{display:block;height:100%;border-radius:3px;background:#8FA2B6;}
+#emcar .lowi.bad .tr i{background:var(--detr);}
+#emcar .lowi .sc{font:600 13px "IBM Plex Mono";text-align:right;}
+#emcar .lowi.bad .sc{color:var(--detr);}
+#emcar .qa{font-size:13px;line-height:1.55;color:var(--ink2);border-left:2px solid var(--detr);padding-left:12px;}
+
+#emcar .note{font-size:11.5px;color:var(--faint);margin-top:10px;margin-left:40px;line-height:1.5;}
+#emcar .footer{color:var(--faint);font-size:11px;margin-top:30px;line-height:1.65;border-top:1px solid var(--line);padding-top:16px;}
+#emcar .footer b{color:var(--muted);}
+#emcar .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:12.5px;padding:9px 16px;border-radius:9px;z-index:100;display:none;}
+#emcar .toast.on{display:block;}
+#emcar .fade{animation:emcarfade .25s ease;}@keyframes emcarfade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+@media(prefers-reduced-motion:reduce){#emcar .fade{animation:none;}}
+</style>
+</head>
+<body style="margin:0">
+<div id="emcar">
+<div class="hdr"><div class="hbar">
+ <div class="brand">
+  <div class="ey">Euromoney Trade Finance Survey 2027</div>
+  <h1><b>Crédit Agricole</b> Clients at Risk Dashboard</h1>
+  <div class="sub" id="ecEntities"></div>
+ </div>
+ <div class="heroKPI" id="ecHero"></div>
+</div></div>
+<div class="caveat"><div class="in"><span class="ic">!</span><div id="ecCaveat"></div></div></div>
+
+<div class="filters"><div class="wrap" style="padding-bottom:0">
+ <div class="frow">
+  <div><span class="flab">Country</span><div class="ms" data-k="country"></div></div>
+  <div><span class="flab">Role of the respondent</span><div class="ms" data-k="role"></div></div>
+  <div><span class="flab">Size of the company</span><div class="ms" data-k="size"></div></div>
+  <div><span class="flab">HQ of the company</span><div class="ms" data-k="hq"></div></div>
+  <button class="resetbtn" id="ecReset">Clear all</button>
+ </div>
+ <div class="fsum" id="ecFsum"></div>
+</div></div>
+
+<div class="wrap">
+ <section>
+  <div class="shead"><span class="snum">01</span><h2>Executive summary</h2><span class="sp"></span>
+   <div class="btngrp">
+    <button class="btn" data-exp="jpeg"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="10" rx="1.5"/><circle cx="6" cy="7" r="1.3"/><path d="M3 12l3.5-3.5 2.5 2.5 2-2 2 2"/></svg>Export JPEG</button>
+    <button class="btn pri" data-exp="pdf"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 1.8h5.5L13 5.3v8.9H4z"/><path d="M9.3 1.8v3.6H13"/></svg>Export PDF</button>
+   </div>
+  </div>
+  <p class="sdesc">All Crédit Agricole clients in the current selection, anonymous and disclosed. Each client is one respondent's rating of a Crédit Agricole entity.</p>
+  <div class="exec" id="ecExec">
+   <div class="exhead"><div class="ey">Euromoney Trade Finance Survey 2027 · Executive summary</div><div class="t"><b>Crédit Agricole</b> Clients at Risk</div><div class="f" id="ecExF"></div></div>
+   <div class="egrid">
+    <div class="card ecard">
+     <div class="et">Net Promoter Score</div>
+     <div class="eq">How likely clients are to recommend Crédit Agricole (0–10)</div>
+     <div class="ehero"><span class="n" id="ecNps">–</span><span class="u">NPS<br><span id="ecNpsN"></span></span></div>
+     <div class="sbar" id="ecNpsBar"></div>
+     <div class="lrows" id="ecNpsRows"></div>
+    </div>
+    <div class="card ecard">
+     <div class="et">Business intentions</div>
+     <div class="eq">Planned change in trade finance spend with Crédit Agricole</div>
+     <div class="ehero"><span class="n" id="ecDec">–</span><span class="u">looking to<br>decrease business</span></div>
+     <div class="sbar" id="ecIntBar"></div>
+     <div class="lrows" id="ecIntRows"></div>
+    </div>
+    <div class="card ecard">
+     <div class="et">Low satisfaction</div>
+     <div class="eq">Clients rating 3 or more assessment criteria below 8.00</div>
+     <div class="ehero"><span class="n risk" id="ecLow">–</span><span class="u" id="ecLowU"></span></div>
+     <div class="hist" id="ecHist"></div>
+    </div>
+   </div>
+   <div class="card riskstrip">
+    <div class="rl"><div class="et">Clients showing at least one risk signal</div><div class="big" id="ecRisk">–</div></div>
+    <div class="rtiles" id="ecRiskTiles"></div>
+   </div>
+   <div class="lowbase" id="ecLowBase"></div>
+   <div class="exfoot" id="ecExFoot"></div>
+  </div>
+ </section>
+
+ <section>
+  <div class="shead"><span class="snum">02</span><h2>Named clients at risk</h2><span class="sp"></span>
+   <div class="btngrp">
+    <button class="btn" data-dl="csv"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v8M4.5 6.8 8 10.3l3.5-3.5M2.5 13.5h11"/></svg>CSV</button>
+    <button class="btn pri" data-dl="xlsx"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2v8M4.5 6.8 8 10.3l3.5-3.5M2.5 13.5h11"/></svg>Excel</button>
+   </div>
+  </div>
+  <p class="sdesc">Clients who gave full consent to be identified, triggering at least one signal: <b>NPS detractor</b>, <b>looking to decrease spend</b> with Crédit Agricole, or <b>3+ criteria scored below 8.00</b>. Ranked by the number of signals, then by the number of low scores. Click a client for the deep dive. The CSV and Excel downloads include every client listed, with all deep-dive fields.</p>
+  <div class="ddhead">
+   <div class="ddcount" id="ecDdCount"></div>
+  </div>
+  <div id="ecList"></div>
+  <p class="note" id="ecListNote"></p>
+ </section>
+ <div class="footer" id="ecFoot"></div>
+</div>
+
+<div class="ov" id="ecOv"></div>
+<aside class="drawer" id="ecDrawer" role="dialog" aria-modal="true" aria-labelledby="ecDName">
+ <div class="dhd"><div class="ey"><span>Client deep dive</span><button class="x" id="ecX" aria-label="Close">✕</button></div><h3 id="ecDName"></h3><div class="dm" id="ecDMeta"></div></div>
+ <div class="dbody" id="ecDBody"></div>
+</aside>
+<div class="toast" id="ecToast"></div>
+</div>
+
+<script>
+(function(){
+const DATA = {"meta":{"bank":"Crédit Agricole","entities":[["Crédit Agricole",88],["Crédit Agricole CIB",51],["Crédit Agricole Italia",24],["Crédit Agricole Polska",7],["Crédit Agricole Egypt",4]],"asOf":"19 October 2026","built":"19 October 2026","surveyResponses":5842,"sizeOrder":["Less than USD $10m","USD $10-$50m","USD $50-$250m","USD $250-$500m","USD $500m-$1bn","USD $1bn-$2bn","More than USD $2bn"]},"criteria":[{"cat":"Product offering","name":"Advisory Services"},{"cat":"Product offering","name":"Dynamic discounting"},{"cat":"Product offering","name":"Documentary collections"},{"cat":"Product offering","name":"ESG solutions"},{"cat":"Product offering","name":"Guarantees"},{"cat":"Product offering","name":"Letters of credit"},{"cat":"Product offering","name":"Trade loans"},{"cat":"Product offering","name":"Structured trade"},{"cat":"Product offering","name":"Working capital solutions"},{"cat":"Product offering","name":"Other (please specify)"},{"cat":"Client service","name":"International presence"},{"cat":"Client service","name":"Pricing"},{"cat":"Client service","name":"Credit facility terms and availability"},{"cat":"Client service","name":"Credible and trusted ESG advisor"},{"cat":"Client service","name":"Transaction execution"},{"cat":"Client service","name":"Billing and invoicing process"},{"cat":"Client service","name":"Onboarding and KYC"},{"cat":"Client service","name":"Client manager quality of advice"},{"cat":"Technology","name":"Digital product origination"},{"cat":"Technology","name":"Paperless documentation processing"},{"cat":"Technology","name":"Integration into supply chain / workflow management"},{"cat":"Technology","name":"Software tools"},{"cat":"Technology","name":"Analytics and reporting tools"}],"clients":[{"id":"C0001","disclosed":true,"entity":"Crédit Agricole CIB","country":"India","role":"Other","size":"USD $1bn-$2bn","hq":"Germany","nps":7,"npsClass":"Passive","intent":"Remain the same","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1,"name":"NORDEX INDIA PRIVATE LIMITED","scope":"Global","office":"India","oversee":null,"industry":"Energy","ownership":"Subsidiary of a foreign company","turnover":"USD $1bn-$2bn","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":2,"providers":"2","scores":[[2,8.0],[6,7.0],[7,8.0],[8,9.0],[10,8.0],[11,7.0],[12,8.0],[14,7.0],[15,7.0],[16,9.0],[18,8.0],[19,7.0],[21,8.0]],"improve":null,"date":"2026-09-21"},{"id":"C0002","disclosed":true,"entity":"Crédit Agricole","country":"South Korea","role":"Other","size":"USD $1bn-$2bn","hq":"South Korea","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"한화토탈에너지스","scope":"Regional","office":"South Korea","oversee":null,"industry":"Energy","ownership":"Parent company","turnover":"USD $1bn-$2bn","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"6 or more","scores":[[0,10.0],[4,10.0],[6,10.0],[10,10.0],[11,9.0],[12,9.0],[14,9.0],[15,9.0],[16,9.0],[17,10.0],[18,8.0],[19,9.0],[20,9.0],[21,9.0],[22,10.0]],"improve":null,"date":"2026-09-22"},{"id":"C0003","disclosed":false,"entity":"Crédit Agricole CIB","country":"Switzerland","role":"Finance Director","size":"USD $1bn-$2bn","hq":"France","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0004","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Finance Manager","size":"USD $1bn-$2bn","hq":"India","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0005","disclosed":false,"entity":"Crédit Agricole","country":"Brazil","role":"Finance Manager","size":"USD $1bn-$2bn","hq":"Brazil","nps":9,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0006","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Finance Manager","size":"USD $1bn-$2bn","hq":"India","nps":9,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0007","disclosed":false,"entity":"Crédit Agricole CIB","country":"United Arab Emirates","role":"Finance Manager","size":"USD $10-$50m","hq":"Japan","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0008","disclosed":false,"entity":"Crédit Agricole","country":"Brazil","role":"Analyst","size":"USD $1bn-$2bn","hq":"Brazil","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0009","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Accountant","size":"USD $250-$500m","hq":"India","nps":8,"npsClass":"Passive","intent":"Remain the same","low":3,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0010","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $10-$50m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0011","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Senior Financial Manager","size":"USD $500m-$1bn","hq":"India","nps":5,"npsClass":"Detractor","intent":"Remain the same","low":23,"sig":{"det":true,"dec":false,"low":true},"nSig":2},{"id":"C0012","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Other","size":"USD $1bn-$2bn","hq":"India","nps":9,"npsClass":"Promoter","intent":"Increase","low":8,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0013","disclosed":false,"entity":"Crédit Agricole CIB","country":"United Arab Emirates","role":"Senior Accountant","size":"USD $1bn-$2bn","hq":"India","nps":8,"npsClass":"Passive","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0014","disclosed":false,"entity":"Crédit Agricole","country":"Switzerland","role":"Chief Financial Officer","size":"Less than USD $10m","hq":"Switzerland","nps":7,"npsClass":"Passive","intent":"Remain the same","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0015","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $10-$50m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0016","disclosed":false,"entity":"Crédit Agricole CIB","country":"Brazil","role":"Head of Treasury","size":"USD $1bn-$2bn","hq":"United States of America","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0017","disclosed":true,"entity":"Crédit Agricole","country":"South Korea","role":"Finance Manager","size":"USD $1bn-$2bn","hq":"South Korea","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"HanwhaAerospace","scope":"Global","office":"South Korea","oversee":null,"industry":"Other (Aerospace, Defense)","ownership":"Parent company","turnover":"USD $1bn-$2bn","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"6 or more","scores":[[0,10.0],[1,9.0],[2,9.0],[3,10.0],[4,10.0],[5,10.0],[6,10.0],[7,10.0],[8,10.0],[10,10.0],[11,10.0],[12,10.0],[13,10.0],[14,10.0],[15,10.0],[16,10.0],[17,10.0],[18,10.0],[19,10.0],[20,10.0],[21,10.0],[22,10.0]],"improve":null,"date":"2026-09-28"},{"id":"C0018","disclosed":false,"entity":"Crédit Agricole","country":"China","role":"Accountant","size":"USD $50-$250m","hq":"Germany","nps":8,"npsClass":"Passive","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0019","disclosed":true,"entity":"Crédit Agricole","country":"India","role":"Finance Manager","size":"USD $50-$250m","hq":"India","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"SYSTRA MVA CONSULTING (INDIA) PRIVATE LIMITED","scope":"Domestic","office":null,"oversee":"India","industry":"Other (Consulting Engineering Services)","ownership":"Subsidiary of a foreign company","turnover":"USD $50-$250m","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"3","scores":[[0,10.0],[1,10.0],[2,10.0],[3,10.0],[4,10.0],[5,10.0],[6,10.0],[7,10.0],[8,10.0],[10,10.0],[11,10.0],[12,10.0],[13,10.0],[14,10.0],[15,10.0],[16,10.0],[17,10.0],[18,10.0],[19,10.0],[20,10.0],[21,10.0],[22,10.0]],"improve":null,"date":"2026-09-28"},{"id":"C0020","disclosed":true,"entity":"Crédit Agricole","country":"India","role":"Finance Manager","size":"USD $1bn-$2bn","hq":"United States of America","nps":7,"npsClass":"Passive","intent":"Remain the same","low":22,"sig":{"det":false,"dec":false,"low":true},"nSig":1,"name":"Baker Hughes","scope":"Global","office":"India","oversee":null,"industry":"Energy","ownership":"Parent company","turnover":"USD $1bn-$2bn","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":4,"providers":"6 or more","scores":[[0,6.0],[1,6.0],[2,6.0],[3,6.0],[4,6.0],[5,6.0],[6,6.0],[7,6.0],[8,6.0],[10,6.0],[11,6.0],[12,6.0],[13,6.0],[14,6.0],[15,6.0],[16,6.0],[17,6.0],[18,6.0],[19,6.0],[20,6.0],[21,6.0],[22,6.0]],"improve":null,"date":"2026-09-28"},{"id":"C0021","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Finance Manager","size":"Less than USD $10m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0022","disclosed":true,"entity":"Crédit Agricole","country":"Egypt","role":"Other","size":"USD $10-$50m","hq":"Egypt","nps":3,"npsClass":"Detractor","intent":"Increase","low":12,"sig":{"det":true,"dec":false,"low":true},"nSig":2,"name":"credit Agricole Egypt","scope":"Domestic","office":null,"oversee":"Egypt","industry":"Financials","ownership":"Subsidiary of a foreign company","turnover":"USD $10-$50m","intentRaw":"Increase","intentSrc":"Expected change in total trade finance volume (sole/unspecified provider)","rank":1,"providers":"1","scores":[[0,7.0],[1,4.0],[2,9.0],[4,10.0],[5,10.0],[6,10.0],[7,10.0],[8,10.0],[10,4.0],[11,3.0],[12,3.0],[14,9.0],[15,2.0],[16,9.0],[17,3.0],[18,4.0],[19,3.0],[20,2.0],[21,2.0],[22,2.0]],"improve":"more offers","date":"2026-09-28"},{"id":"C0023","disclosed":true,"entity":"Crédit Agricole","country":"Spain","role":"Finance Manager","size":"USD $500m-$1bn","hq":"Spain","nps":7,"npsClass":"Passive","intent":"Remain the same","low":19,"sig":{"det":false,"dec":false,"low":true},"nSig":1,"name":"GS INIMA ENVIRONMENT","scope":"Global","office":"Spain","oversee":null,"industry":"Other (SERVICIOS DE INGENIERA DEL AGUA)","ownership":"Subsidiary of a foreign company","turnover":"USD $500m-$1bn","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":4,"providers":"6 or more","scores":[[4,7.0],[5,7.0],[6,7.0],[7,7.0],[8,7.0],[9,7.0,"Other product"],[10,7.0],[11,7.0],[12,7.0],[13,7.0],[14,7.0],[15,7.0],[16,7.0],[17,7.0],[18,7.0],[19,7.0],[20,7.0],[21,7.0],[22,7.0]],"improve":"rapidez","date":"2026-09-28"},{"id":"C0024","disclosed":false,"entity":"Crédit Agricole CIB","country":"Italy","role":"Analyst","size":"USD $1bn-$2bn","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0025","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $250-$500m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":4,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0026","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Chief Financial Officer","size":"USD $50-$250m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0027","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Director","size":"USD $10-$50m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0028","disclosed":true,"entity":"Crédit Agricole Egypt","country":"Egypt","role":"Chief Financial Officer","size":"USD $50-$250m","hq":"Egypt","nps":9,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"Tam Environmental Services","scope":"Regional","office":"Egypt","oversee":null,"industry":"Other (Desalination/Waste Water Treatment)","ownership":"Parent company","turnover":"USD $50-$250m","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":2,"providers":"3","scores":[[2,8.0],[4,9.0],[5,8.0],[10,8.0],[11,8.0],[12,8.0],[14,8.0],[15,8.0],[16,8.0],[17,8.0],[18,9.0],[19,8.0],[20,8.0],[21,8.0],[22,8.0]],"improve":null,"date":"2026-09-29"},{"id":"C0029","disclosed":true,"entity":"Crédit Agricole","country":"Egypt","role":"Finance Manager","size":"USD $10-$50m","hq":"Italy","nps":0,"npsClass":"Detractor","intent":"Decrease","low":21,"sig":{"det":true,"dec":true,"low":true},"nSig":3,"name":"Serioplast Egypt Sae","scope":"Global","office":"Egypt","oversee":null,"industry":"Industrials","ownership":"Subsidiary of a foreign company","turnover":"USD $10-$50m","intentRaw":"Decrease spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"3","scores":[[0,2.0],[1,4.0],[2,2.0],[3,1.0],[4,1.0],[5,1.0],[6,3.0],[7,1.0],[8,3.0],[10,1.0],[11,1.0],[12,1.0],[14,4.0],[15,1.0],[16,1.0],[17,2.0],[18,5.0],[19,1.0],[20,1.0],[21,5.0],[22,5.0]],"improve":"Customer service requires improvement and follow-up with customers.","date":"2026-09-29"},{"id":"C0030","disclosed":false,"entity":"Crédit Agricole","country":"Spain","role":"Finance Manager","size":"USD $50-$250m","hq":"United Kingdom","nps":7,"npsClass":"Passive","intent":"Remain the same","low":17,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0031","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Other","size":"USD $1bn-$2bn","hq":"India","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0032","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Accountant","size":"USD $10-$50m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":11,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0033","disclosed":false,"entity":"Crédit Agricole","country":"Egypt","role":"Other","size":"USD $1bn-$2bn","hq":"United Kingdom","nps":8,"npsClass":"Passive","intent":"Remain the same","low":3,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0034","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Head of Treasury","size":"USD $10-$50m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":7,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0035","disclosed":false,"entity":"Crédit Agricole","country":"Spain","role":"Finance Manager","size":"USD $1bn-$2bn","hq":"Spain","nps":7,"npsClass":"Passive","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0036","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Chief Financial Officer","size":"Less than USD $10m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":8,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0037","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Manager","size":"USD $10-$50m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0038","disclosed":false,"entity":"Crédit Agricole CIB","country":"Egypt","role":"General Manager","size":"USD $500m-$1bn","hq":"Egypt","nps":2,"npsClass":"Detractor","intent":"Remain the same","low":23,"sig":{"det":true,"dec":false,"low":true},"nSig":2},{"id":"C0039","disclosed":false,"entity":"Crédit Agricole CIB","country":"South Korea","role":"Other","size":"USD $1bn-$2bn","hq":"South Korea","nps":8,"npsClass":"Passive","intent":"Remain the same","low":9,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0040","disclosed":true,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $1bn-$2bn","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"FEDRIGONI SPA","scope":"Global","office":"Italy","oversee":null,"industry":"Industrials","ownership":"Parent company","turnover":"USD $1bn-$2bn","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"6 or more","scores":[[0,8.0],[5,8.0],[8,9.0],[10,9.0],[11,9.0],[12,9.0],[14,9.0],[15,9.0],[16,9.0],[17,9.0],[18,9.0],[19,9.0],[20,9.0],[21,9.0],[22,9.0]],"improve":null,"date":"2026-10-01"},{"id":"C0041","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Finance Manager","size":"Less than USD $10m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0042","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Chief Financial Officer","size":"USD $10-$50m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Decrease","low":0,"sig":{"det":false,"dec":true,"low":false},"nSig":1},{"id":"C0043","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Manager","size":"USD $50-$250m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0044","disclosed":false,"entity":"Crédit Agricole","country":"Poland","role":"Finance Manager","size":"USD $50-$250m","hq":"South Korea","nps":8,"npsClass":"Passive","intent":"Remain the same","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0045","disclosed":false,"entity":"Crédit Agricole","country":"France","role":"Finance Director","size":"USD $50-$250m","hq":"France","nps":8,"npsClass":"Passive","intent":"Remain the same","low":7,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0046","disclosed":false,"entity":"Crédit Agricole","country":"Hong Kong SAR","role":"Head of Treasury","size":"USD $1bn-$2bn","hq":"China","nps":8,"npsClass":"Passive","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0047","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Chief Financial Officer","size":"USD $250-$500m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0048","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $10-$50m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0049","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Chief Financial Officer","size":"USD $10-$50m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0050","disclosed":true,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Manager","size":"USD $50-$250m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"LAMIPEL SPA","scope":"Global","office":"Italy","oversee":null,"industry":"Agriculture, fishing and forestry","ownership":"Parent company","turnover":"USD $50-$250m","intentRaw":"Increase Spend by 0-10%","intentSrc":"Redistribution of spend across providers","rank":4,"providers":"6 or more","scores":[[0,10.0],[1,10.0],[2,10.0],[3,9.0],[4,9.0],[5,10.0],[6,10.0],[7,10.0],[8,10.0],[10,10.0],[11,10.0],[12,9.0],[13,9.0],[14,9.0],[15,9.0],[16,9.0],[17,10.0],[18,9.0],[19,9.0],[20,9.0],[22,9.0]],"improve":null,"date":"2026-10-05"},{"id":"C0051","disclosed":false,"entity":"Crédit Agricole","country":"Spain","role":"Finance Manager","size":"USD $50-$250m","hq":"Spain","nps":8,"npsClass":"Passive","intent":"Remain the same","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0052","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Senior Accountant","size":"USD $500m-$1bn","hq":"India","nps":10,"npsClass":"Promoter","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0053","disclosed":false,"entity":"Crédit Agricole","country":"United Arab Emirates","role":"Accountant","size":"USD $10-$50m","hq":"Belgium","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0054","disclosed":true,"entity":"Crédit Agricole Egypt","country":"Egypt","role":"Chief Financial Officer","size":"USD $10-$50m","hq":"Egypt","nps":10,"npsClass":"Promoter","intent":"Increase","low":2,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"الفا تريد","scope":"Domestic","office":null,"oversee":"Egypt","industry":"Consumer Staples","ownership":"Parent company","turnover":"USD $10-$50m","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"6 or more","scores":[[0,10.0],[2,10.0],[4,10.0],[5,10.0],[6,10.0],[8,10.0],[9,1.0,"Other: لا يوجد"],[10,10.0],[11,10.0],[12,10.0],[14,10.0],[15,10.0],[16,10.0],[17,10.0],[18,10.0],[19,5.0],[20,10.0],[21,10.0],[22,10.0]],"improve":"زيادة الفروع و مكينات الايداع والسحب وتحسين خدمة الأنترنت البنكى","date":"2026-10-06"},{"id":"C0055","disclosed":false,"entity":"Crédit Agricole Egypt","country":"Egypt","role":"Accountant","size":"USD $10-$50m","hq":"Egypt","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0056","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Head of Treasury","size":"USD $500m-$1bn","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":2,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0057","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Senior Accountant","size":"USD $250-$500m","hq":"India","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0058","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Chief Financial Officer","size":"USD $50-$250m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Increase","low":4,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0059","disclosed":false,"entity":"Crédit Agricole","country":"France","role":"Chief Financial Officer","size":"USD $50-$250m","hq":"France","nps":8,"npsClass":"Passive","intent":"Increase","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0060","disclosed":true,"entity":"Crédit Agricole","country":"Italy","role":"Senior Accountant","size":"Less than USD $10m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"PROMEC SRL","scope":"Global","office":"Italy","oversee":null,"industry":"Manufacturing","ownership":"Parent company","turnover":"Less than USD $10m","intentRaw":"Increase","intentSrc":"Expected change in total trade finance volume (sole/unspecified provider)","rank":1,"providers":"1","scores":[[0,10.0],[2,10.0],[4,10.0],[5,10.0],[6,10.0],[7,10.0],[8,10.0],[10,10.0],[12,10.0],[14,10.0],[15,4.0]],"improve":null,"date":"2026-10-07"},{"id":"C0061","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $10-$50m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Increase","low":8,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0062","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Other","size":"USD $1bn-$2bn","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0063","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Senior Financial Manager","size":"USD $50-$250m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0064","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Other","size":"Less than USD $10m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":4,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0065","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $50-$250m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Increase","low":2,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0066","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $50-$250m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":8,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0067","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Other","size":"USD $1bn-$2bn","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":13,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0068","disclosed":false,"entity":"Crédit Agricole","country":"Sweden","role":"Finance Manager","size":"USD $500m-$1bn","hq":"Sweden","nps":8,"npsClass":"Passive","intent":"Increase","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0069","disclosed":false,"entity":"Crédit Agricole CIB","country":"South Korea","role":"Head of Treasury","size":"USD $1bn-$2bn","hq":"South Korea","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0070","disclosed":false,"entity":"Crédit Agricole CIB","country":"South Korea","role":"Other","size":"USD $10-$50m","hq":"South Korea","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0071","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Senior Financial Manager","size":"USD $500m-$1bn","hq":"India","nps":7,"npsClass":"Passive","intent":"Remain the same","low":21,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0072","disclosed":false,"entity":"Crédit Agricole","country":"Hong Kong SAR","role":"Finance Manager","size":"USD $1bn-$2bn","hq":"Hong Kong SAR","nps":7,"npsClass":"Passive","intent":"Remain the same","low":23,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0073","disclosed":false,"entity":"Crédit Agricole CIB","country":"Hong Kong SAR","role":"Finance Manager","size":"USD $250-$500m","hq":"China","nps":7,"npsClass":"Passive","intent":"Remain the same","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0074","disclosed":false,"entity":"Crédit Agricole CIB","country":"China","role":"Finance Director","size":"USD $500m-$1bn","hq":"China","nps":8,"npsClass":"Passive","intent":"Remain the same","low":3,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0075","disclosed":false,"entity":"Crédit Agricole","country":"China","role":"Other","size":"USD $500m-$1bn","hq":"China","nps":8,"npsClass":"Passive","intent":"Remain the same","low":4,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0076","disclosed":false,"entity":"Crédit Agricole","country":"France","role":"Finance Director","size":"More than USD $2bn","hq":"France","nps":9,"npsClass":"Promoter","intent":"Increase","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0077","disclosed":false,"entity":"Crédit Agricole","country":"China","role":"Finance Manager","size":"More than USD $2bn","hq":"China","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0078","disclosed":false,"entity":"Crédit Agricole","country":"France","role":"Senior Financial Manager","size":"More than USD $2bn","hq":"France","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0079","disclosed":true,"entity":"Crédit Agricole CIB","country":"Spain","role":"Other","size":"USD $1bn-$2bn","hq":"Spain","nps":8,"npsClass":"Passive","intent":"Remain the same","low":8,"sig":{"det":false,"dec":false,"low":true},"nSig":1,"name":"Obrascon Huarte Lain SA","scope":"Global","office":"Spain","oversee":null,"industry":"Construction","ownership":"Parent company","turnover":"USD $1bn-$2bn","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":2,"providers":"6 or more","scores":[[0,7.0],[4,7.0],[10,8.0],[11,7.0],[12,7.0],[13,7.0],[14,8.0],[15,7.0],[16,7.0],[17,8.0],[18,8.0],[19,7.0],[20,8.0],[21,8.0],[22,8.0]],"improve":null,"date":"2026-10-08"},{"id":"C0080","disclosed":true,"entity":"Crédit Agricole","country":"Italy","role":"Finance Manager","size":"USD $10-$50m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"SAIP S.R.L. IMPIANTI PER POLIURETANI","scope":"Global","office":"Italy","oversee":null,"industry":"Industrials","ownership":"Parent company","turnover":"USD $10-$50m","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"6 or more","scores":[[0,10.0],[2,10.0],[3,8.0],[4,10.0],[5,10.0],[6,8.0],[7,8.0],[8,8.0],[10,9.0],[11,9.0],[12,9.0],[13,9.0],[14,9.0],[15,9.0],[16,9.0],[17,9.0],[21,9.0]],"improve":"MAGGIORE PRESENZA SUL MERCATO AMERICANO","date":"2026-10-08"},{"id":"C0081","disclosed":false,"entity":"Crédit Agricole CIB","country":"Spain","role":"Finance Manager","size":"More than USD $2bn","hq":"Spain","nps":6,"npsClass":"Detractor","intent":"Remain the same","low":8,"sig":{"det":true,"dec":false,"low":true},"nSig":2},{"id":"C0082","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Finance Manager","size":"USD $1bn-$2bn","hq":"Austria","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0083","disclosed":false,"entity":"Crédit Agricole","country":"United States of America","role":"Other","size":"USD $1bn-$2bn","hq":"United States of America","nps":7,"npsClass":"Passive","intent":"Remain the same","low":8,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0084","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $10-$50m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0085","disclosed":false,"entity":"Crédit Agricole CIB","country":"China","role":"Finance Manager","size":"More than USD $2bn","hq":"China","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0086","disclosed":false,"entity":"Crédit Agricole CIB","country":"China","role":"Financial Controller","size":"More than USD $2bn","hq":"Japan","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0087","disclosed":false,"entity":"Crédit Agricole","country":"Singapore","role":"Senior Financial Manager","size":"USD $500m-$1bn","hq":"Hong Kong SAR","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0088","disclosed":false,"entity":"Crédit Agricole CIB","country":"Chile","role":"Other","size":"USD $250-$500m","hq":"China","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0089","disclosed":false,"entity":"Crédit Agricole CIB","country":"China","role":"Head of Treasury","size":"USD $50-$250m","hq":"China","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0090","disclosed":true,"entity":"Crédit Agricole","country":"India","role":"Head of Treasury","size":"More than USD $2bn","hq":"France","nps":9,"npsClass":"Promoter","intent":"Increase","low":2,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"GEOQUEST INDIA PVT LTD","scope":"Global","office":"India","oversee":null,"industry":"Construction","ownership":"Subsidiary of a foreign company","turnover":"More than USD $2bn","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":2,"providers":"3","scores":[[0,9.0],[1,8.0],[2,8.0],[4,9.0],[5,9.0],[6,8.0],[7,8.0],[8,8.0],[10,9.0],[11,8.0],[12,9.0],[14,8.0],[15,8.0],[16,8.0],[17,9.0],[18,8.0],[19,9.0],[20,9.0],[21,7.0],[22,7.0]],"improve":null,"date":"2026-10-09"},{"id":"C0091","disclosed":false,"entity":"Crédit Agricole","country":"China","role":"Head of Treasury","size":"Less than USD $10m","hq":"China","nps":8,"npsClass":"Passive","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0092","disclosed":true,"entity":"Crédit Agricole Polska","country":"Poland","role":"Chief Financial Officer","size":"USD $500m-$1bn","hq":"Poland","nps":7,"npsClass":"Passive","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"Kronospan Polska","scope":"Domestic","office":null,"oversee":"Poland","industry":"Industrials","ownership":"Subsidiary of a foreign company","turnover":"USD $500m-$1bn","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":3,"providers":"4","scores":[[0,8.0],[4,8.0],[8,8.0],[11,10.0],[12,10.0],[14,8.0],[15,10.0],[18,9.0],[19,10.0]],"improve":"Szybkość podejmowania decyzji","date":"2026-10-09"},{"id":"C0093","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Senior Financial Manager","size":"USD $10-$50m","hq":"India","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0094","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Manager","size":"USD $10-$50m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0095","disclosed":false,"entity":"Crédit Agricole CIB","country":"China","role":"Head of Treasury","size":"USD $1bn-$2bn","hq":"China","nps":5,"npsClass":"Detractor","intent":"Remain the same","low":4,"sig":{"det":true,"dec":false,"low":true},"nSig":2},{"id":"C0096","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Other","size":"USD $10-$50m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Increase","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0097","disclosed":true,"entity":"Crédit Agricole","country":"India","role":"Finance Manager","size":"USD $50-$250m","hq":"Austria","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"ANDRITZ TECHNOLOGIES PRIVATE LIMITED","scope":"Domestic","office":null,"oversee":"India","industry":"Manufacturing","ownership":"Parent company","turnover":"USD $50-$250m","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"3","scores":[[0,10.0],[1,10.0],[2,10.0],[3,10.0],[4,10.0],[5,10.0],[6,10.0],[7,10.0],[8,10.0],[10,10.0],[11,10.0],[12,10.0],[13,10.0],[14,10.0],[15,10.0],[16,10.0],[17,10.0],[18,10.0],[19,10.0],[20,10.0],[21,10.0],[22,10.0]],"improve":null,"date":"2026-10-09"},{"id":"C0098","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Accountant","size":"Less than USD $10m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":2,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0099","disclosed":false,"entity":"Crédit Agricole CIB","country":"China","role":"Other","size":"USD $500m-$1bn","hq":"China","nps":10,"npsClass":"Promoter","intent":"Decrease","low":0,"sig":{"det":false,"dec":true,"low":false},"nSig":1},{"id":"C0100","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Finance Manager","size":"More than USD $2bn","hq":"India","nps":7,"npsClass":"Passive","intent":"Increase","low":9,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0101","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Accountant","size":"USD $10-$50m","hq":"Italy","nps":6,"npsClass":"Detractor","intent":"Increase","low":8,"sig":{"det":true,"dec":false,"low":true},"nSig":2},{"id":"C0102","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Finance Manager","size":"USD $50-$250m","hq":"India","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0103","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Head of Treasury","size":"USD $1bn-$2bn","hq":"India","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0104","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Finance Manager","size":"USD $50-$250m","hq":"Austria","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0105","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Finance Manager","size":"USD $10-$50m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Increase","low":2,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0106","disclosed":true,"entity":"Crédit Agricole CIB","country":"India","role":"Senior Financial Manager","size":"USD $1bn-$2bn","hq":"India","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"reliance industries ltd","scope":"Global","office":"India","oversee":null,"industry":"Energy","ownership":"Parent company","turnover":"USD $1bn-$2bn","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":2,"providers":"6 or more","scores":[[0,8.0],[4,10.0],[5,10.0],[6,10.0],[7,10.0],[8,10.0],[10,10.0],[11,10.0],[12,10.0],[14,10.0],[15,10.0],[16,10.0],[17,10.0],[18,10.0],[19,10.0],[20,10.0],[21,10.0],[22,10.0]],"improve":null,"date":"2026-10-09"},{"id":"C0107","disclosed":false,"entity":"Crédit Agricole Polska","country":"Poland","role":"Finance Manager","size":"USD $250-$500m","hq":"Poland","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0108","disclosed":false,"entity":"Crédit Agricole","country":"China","role":"Other","size":"Less than USD $10m","hq":"China","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0109","disclosed":true,"entity":"Crédit Agricole","country":"Italy","role":"Other","size":"USD $10-$50m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1,"name":"MAG AUTOBLOK TECNOMAGNETE SPA","scope":"Global","office":"Italy","oversee":null,"industry":"Manufacturing","ownership":"Subsidiary of a domestic company","turnover":"USD $10-$50m","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":2,"providers":"3","scores":[[10,6.0],[11,7.0],[14,6.0],[16,6.0],[17,6.0],[21,6.0]],"improve":null,"date":"2026-10-09"},{"id":"C0110","disclosed":true,"entity":"Crédit Agricole CIB","country":"Hong Kong SAR","role":"Accountant","size":"USD $1bn-$2bn","hq":"China","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"JIANGXI COPPER LOYAL SKY INDUSTRIAL LIMITED","scope":"Regional","office":"Hong Kong SAR","oversee":null,"industry":"Mining","ownership":"Subsidiary of a domestic company","turnover":"USD $1bn-$2bn","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"6 or more","scores":[[0,10.0],[1,10.0],[2,10.0],[3,10.0],[4,10.0],[5,10.0],[6,10.0],[7,10.0],[8,10.0],[9,10.0,"Other product"],[10,10.0],[11,10.0],[12,10.0],[13,10.0],[14,10.0],[15,10.0],[16,10.0],[17,10.0],[18,10.0],[19,10.0],[20,10.0],[21,10.0],[22,10.0]],"improve":null,"date":"2026-10-10"},{"id":"C0111","disclosed":false,"entity":"Crédit Agricole CIB","country":"China","role":"Finance Manager","size":"More than USD $2bn","hq":"China","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0112","disclosed":false,"entity":"Crédit Agricole CIB","country":"South Korea","role":"Head of Treasury","size":"USD $10-$50m","hq":"South Korea","nps":8,"npsClass":"Passive","intent":"Remain the same","low":9,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0113","disclosed":false,"entity":"Crédit Agricole CIB","country":"United Arab Emirates","role":"Senior Financial Manager","size":"USD $500m-$1bn","hq":"South Korea","nps":8,"npsClass":"Passive","intent":"Remain the same","low":3,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0114","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Financial Controller","size":"Less than USD $10m","hq":"India","nps":9,"npsClass":"Promoter","intent":"Increase","low":3,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0115","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Manager","size":"USD $10-$50m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":4,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0116","disclosed":false,"entity":"Crédit Agricole","country":"Switzerland","role":"Senior Financial Manager","size":"USD $1bn-$2bn","hq":"Switzerland","nps":7,"npsClass":"Passive","intent":"Increase","low":21,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0117","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Other","size":"USD $50-$250m","hq":"France","nps":8,"npsClass":"Passive","intent":"Increase","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0118","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Analyst","size":"USD $500m-$1bn","hq":"United States of America","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":3,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0119","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Other","size":"USD $50-$250m","hq":"Taiwan","nps":8,"npsClass":"Passive","intent":"Increase","low":12,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0120","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Head of Treasury","size":"USD $1bn-$2bn","hq":"Finland","nps":6,"npsClass":"Detractor","intent":"Remain the same","low":7,"sig":{"det":true,"dec":false,"low":true},"nSig":2},{"id":"C0121","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Finance Manager","size":"USD $10-$50m","hq":"France","nps":10,"npsClass":"Promoter","intent":"Increase","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0122","disclosed":true,"entity":"Crédit Agricole CIB","country":"India","role":"Head of Treasury","size":"USD $50-$250m","hq":"India","nps":8,"npsClass":"Passive","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"ANDRITZ HYDRO PRIVATE LIMITED","scope":"Regional","office":"India","oversee":null,"industry":"Equipment","ownership":"Subsidiary of a foreign company","turnover":"USD $50-$250m","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":3,"providers":"6 or more","scores":[[0,8.0],[1,8.0],[2,8.0],[3,8.0],[4,8.0],[5,8.0],[6,8.0],[7,8.0],[8,8.0],[10,8.0],[11,8.0],[12,8.0],[13,8.0],[14,8.0],[15,8.0],[16,8.0],[17,8.0],[18,8.0],[19,8.0],[20,8.0],[21,8.0],[22,8.0]],"improve":null,"date":"2026-10-12"},{"id":"C0123","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Other","size":"More than USD $2bn","hq":"India","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0124","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Accountant","size":"Less than USD $10m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0125","disclosed":false,"entity":"Crédit Agricole","country":"France","role":"Analyst","size":"USD $1bn-$2bn","hq":"France","nps":9,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0126","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Head of Treasury","size":"USD $250-$500m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":12,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0127","disclosed":false,"entity":"Crédit Agricole CIB","country":"United States of America","role":"Analyst","size":"More than USD $2bn","hq":"Germany","nps":7,"npsClass":"Passive","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0128","disclosed":false,"entity":"Crédit Agricole CIB","country":"Hong Kong SAR","role":"Finance Director","size":"More than USD $2bn","hq":"Hong Kong SAR","nps":8,"npsClass":"Passive","intent":"Increase","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0129","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Head of Treasury","size":"USD $50-$250m","hq":"France","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0130","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Finance Manager","size":"USD $50-$250m","hq":"France","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0131","disclosed":false,"entity":"Crédit Agricole","country":"Egypt","role":"Head of Treasury","size":"USD $250-$500m","hq":"Japan","nps":8,"npsClass":"Passive","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0132","disclosed":true,"entity":"Crédit Agricole CIB","country":"South Korea","role":"Head of Treasury","size":"USD $1bn-$2bn","hq":"South Korea","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1,"name":"롯데케미칼(주)","scope":"Global","office":"South Korea","oversee":null,"industry":"Manufacturing","ownership":"Parent company","turnover":"USD $1bn-$2bn","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":2,"providers":"2","scores":[[0,10.0],[1,5.0],[2,5.0],[3,5.0],[4,10.0],[6,10.0],[7,5.0],[8,5.0],[9,10.0,"Other product"],[10,10.0],[11,10.0],[12,10.0],[13,5.0],[14,10.0],[15,10.0],[16,10.0],[17,10.0],[18,10.0],[19,10.0],[20,10.0],[21,10.0],[22,10.0]],"improve":"LC 신용장 거래 가능할 수 있도록 조치","date":"2026-10-13"},{"id":"C0133","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Manager","size":"USD $50-$250m","hq":"Italy","nps":6,"npsClass":"Detractor","intent":"Remain the same","low":16,"sig":{"det":true,"dec":false,"low":true},"nSig":2},{"id":"C0134","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Other","size":"USD $250-$500m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0135","disclosed":false,"entity":"Crédit Agricole","country":"France","role":"Analyst","size":"USD $10-$50m","hq":"France","nps":8,"npsClass":"Passive","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0136","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Other","size":"USD $10-$50m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":2,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0137","disclosed":true,"entity":"Crédit Agricole Polska","country":"Poland","role":"Other","size":"USD $500m-$1bn","hq":"Poland","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"Impel S.A.","scope":"Domestic","office":null,"oversee":"Poland","industry":"Other (usługi ochrony, porządkowo-czystościowe, catering)","ownership":"Parent company","turnover":"USD $500m-$1bn","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":3,"providers":"6 or more","scores":[[4,9.0],[11,7.0],[12,9.0],[14,9.0],[15,9.0],[16,10.0],[17,10.0],[18,8.0],[19,9.0]],"improve":"Ulepszenie systemu elektronicznego wnioskowania o gwarancje","date":"2026-10-13"},{"id":"C0138","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Owner / Proprietor","size":"USD $10-$50m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":9,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0139","disclosed":true,"entity":"Crédit Agricole","country":"Italy","role":"Finance Manager","size":"USD $50-$250m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"Progetto 17 Srl","scope":"Global","office":"Italy","oversee":null,"industry":"Retail Trade","ownership":"Parent company","turnover":"USD $50-$250m","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"3","scores":[[0,10.0],[4,9.0],[5,10.0],[6,10.0],[8,10.0],[10,10.0],[11,9.0],[12,8.0],[14,9.0],[15,10.0],[17,10.0],[18,7.0],[19,8.0]],"improve":null,"date":"2026-10-13"},{"id":"C0140","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Accountant","size":"USD $50-$250m","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0141","disclosed":false,"entity":"Crédit Agricole CIB","country":"China","role":"Other","size":"USD $500m-$1bn","hq":"China","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0142","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Other","size":"USD $250-$500m","hq":"India","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0143","disclosed":false,"entity":"Crédit Agricole CIB","country":"Singapore","role":"Head of Treasury","size":"More than USD $2bn","hq":"China","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0144","disclosed":false,"entity":"Crédit Agricole","country":"China","role":"Finance Manager","size":"USD $250-$500m","hq":"United Kingdom","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0145","disclosed":false,"entity":"Crédit Agricole Polska","country":"Poland","role":"Finance Manager","size":"USD $50-$250m","hq":"Poland","nps":8,"npsClass":"Passive","intent":"Increase","low":4,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0146","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Finance Manager","size":"Less than USD $10m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Increase","low":14,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0147","disclosed":false,"entity":"Crédit Agricole CIB","country":"Switzerland","role":"Finance Director","size":"More than USD $2bn","hq":"United Kingdom","nps":10,"npsClass":"Promoter","intent":"Increase","low":2,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0148","disclosed":true,"entity":"Crédit Agricole Italia","country":"Italy","role":"Chief Financial Officer","size":"USD $10-$50m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Increase","low":8,"sig":{"det":false,"dec":false,"low":true},"nSig":1,"name":"ASCOT INDUSTRIAL S.R.L.","scope":"Global","office":"Italy","oversee":null,"industry":"Energy","ownership":"Parent company","turnover":"USD $10-$50m","intentRaw":"Increase Spend by 0-10%","intentSrc":"Redistribution of spend across providers","rank":3,"providers":"6 or more","scores":[[0,9.0],[1,9.0],[2,8.0],[4,8.0],[5,8.0],[6,6.0],[7,6.0],[8,8.0],[10,9.0],[11,9.0],[12,7.0],[14,8.0],[15,7.0],[16,7.0],[17,9.0],[18,7.0],[19,7.0],[20,8.0],[21,8.0],[22,5.0]],"improve":"Ridurre i passaggi burocratici di coordinamento tra la struttura locale e la divisione CIB internazionale nell'emissione e nella gestione delle garanzie contrattuali, e dei crediti documentali, e potenziare le funzionalità digitali del portale aziendale per la gestione delle lettere di credito.","date":"2026-10-14"},{"id":"C0149","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Finance Manager","size":"USD $50-$250m","hq":"Italy","nps":6,"npsClass":"Detractor","intent":"Remain the same","low":7,"sig":{"det":true,"dec":false,"low":true},"nSig":2},{"id":"C0150","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Accountant","size":"USD $50-$250m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":18,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0151","disclosed":false,"entity":"Crédit Agricole","country":"Italy","role":"Finance Director","size":"USD $500m-$1bn","hq":"Italy","nps":10,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0152","disclosed":false,"entity":"Crédit Agricole Polska","country":"Poland","role":"Other","size":"USD $1bn-$2bn","hq":"Poland","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0153","disclosed":true,"entity":"Crédit Agricole CIB","country":"India","role":"Finance Manager","size":"USD $50-$250m","hq":"Taiwan","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"CINDA Engineering & Construction Pvt. Ltd.","scope":"Domestic","office":null,"oversee":"India","industry":"Construction","ownership":"Subsidiary of a foreign company","turnover":"USD $50-$250m","intentRaw":"Remain the same","intentSrc":"Redistribution of spend across providers","rank":1,"providers":"4","scores":[[0,9.0],[1,9.0],[2,9.0],[3,9.0],[4,9.0],[5,9.0],[6,9.0],[7,9.0],[8,9.0],[10,9.0],[11,9.0],[12,9.0],[13,9.0],[14,9.0],[15,9.0],[16,9.0],[17,9.0],[18,9.0],[19,9.0],[20,9.0],[21,9.0],[22,9.0]],"improve":null,"date":"2026-10-15"},{"id":"C0154","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Other","size":"USD $500m-$1bn","hq":"Germany","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0155","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Accountant","size":"USD $1bn-$2bn","hq":"India","nps":10,"npsClass":"Promoter","intent":"Increase","low":1,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0156","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Finance Manager","size":"USD $1bn-$2bn","hq":"India","nps":8,"npsClass":"Passive","intent":"Remain the same","low":4,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0157","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"General Manager","size":"USD $10-$50m","hq":"Italy","nps":7,"npsClass":"Passive","intent":"Remain the same","low":22,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0158","disclosed":false,"entity":"Crédit Agricole CIB","country":"China","role":"Owner / Proprietor","size":"USD $1bn-$2bn","hq":"China","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0159","disclosed":false,"entity":"Crédit Agricole CIB","country":"Italy","role":"Other","size":"More than USD $2bn","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":8,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0160","disclosed":false,"entity":"Crédit Agricole CIB","country":"India","role":"Analyst","size":"More than USD $2bn","hq":"Taiwan","nps":8,"npsClass":"Passive","intent":"Remain the same","low":20,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0161","disclosed":false,"entity":"Crédit Agricole","country":"India","role":"Other","size":"More than USD $2bn","hq":"India","nps":7,"npsClass":"Passive","intent":"Increase","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0162","disclosed":false,"entity":"Crédit Agricole","country":"Poland","role":"Finance Manager","size":"Less than USD $10m","hq":"Poland","nps":8,"npsClass":"Passive","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0163","disclosed":false,"entity":"Crédit Agricole Polska","country":"Poland","role":"Other","size":"USD $1bn-$2bn","hq":"Poland","nps":4,"npsClass":"Detractor","intent":"Increase","low":0,"sig":{"det":true,"dec":false,"low":false},"nSig":1},{"id":"C0164","disclosed":false,"entity":"Crédit Agricole Polska","country":"Poland","role":"Finance Manager","size":"USD $50-$250m","hq":"Poland","nps":8,"npsClass":"Passive","intent":"Increase","low":7,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0165","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Manager","size":"USD $10-$50m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0166","disclosed":false,"entity":"Crédit Agricole","country":"Switzerland","role":"Analyst","size":"More than USD $2bn","hq":"Switzerland","nps":7,"npsClass":"Passive","intent":"Remain the same","low":9,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0167","disclosed":true,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Manager","size":"USD $10-$50m","hq":"Italy","nps":9,"npsClass":"Promoter","intent":"Increase","low":6,"sig":{"det":false,"dec":false,"low":true},"nSig":1,"name":"società a responsabilita limitata","scope":"Global","office":"Italy","oversee":null,"industry":"Equipment","ownership":"Parent company","turnover":"USD $10-$50m","intentRaw":"Increase","intentSrc":"Expected change in total trade finance volume (sole/unspecified provider)","rank":1,"providers":"1","scores":[[0,9.0],[1,8.0],[2,4.0],[3,7.0],[5,9.0],[10,9.0],[11,7.0],[12,7.0],[14,6.0],[15,7.0]],"improve":null,"date":"2026-10-15"},{"id":"C0168","disclosed":false,"entity":"Crédit Agricole","country":"South Korea","role":"General Manager","size":"USD $1bn-$2bn","hq":"South Korea","nps":8,"npsClass":"Passive","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0169","disclosed":false,"entity":"Crédit Agricole CIB","country":"Not stated","role":"Other","size":"USD $250-$500m","hq":"Singapore","nps":9,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0170","disclosed":false,"entity":"Crédit Agricole CIB","country":"Indonesia","role":"Other","size":"More than USD $2bn","hq":"Indonesia","nps":8,"npsClass":"Passive","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0},{"id":"C0171","disclosed":false,"entity":"Crédit Agricole Italia","country":"Italy","role":"Finance Manager","size":"USD $50-$250m","hq":"Italy","nps":8,"npsClass":"Passive","intent":"Remain the same","low":19,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0172","disclosed":false,"entity":"Crédit Agricole","country":"Germany","role":"Finance Manager","size":"More than USD $2bn","hq":"Germany","nps":7,"npsClass":"Passive","intent":"Remain the same","low":5,"sig":{"det":false,"dec":false,"low":true},"nSig":1},{"id":"C0173","disclosed":true,"entity":"Crédit Agricole CIB","country":"India","role":"Head of Treasury","size":"USD $250-$500m","hq":"France","nps":9,"npsClass":"Promoter","intent":"Increase","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0,"name":"Technip Energies India Ltd.","scope":"Domestic","office":null,"oversee":"India","industry":"Other (EPC Contractor)","ownership":"Subsidiary of a foreign company","turnover":"USD $250-$500m","intentRaw":"Increase spend by 10%+","intentSrc":"Redistribution of spend across providers","rank":4,"providers":"5","scores":[[0,9.0],[2,8.0],[4,10.0],[5,9.0],[6,9.0],[8,8.0],[10,8.0],[11,10.0],[12,9.0],[14,8.0],[15,9.0],[16,9.0],[17,9.0],[18,9.0],[19,8.0],[20,8.0],[21,8.0],[22,8.0]],"improve":"technology adoption","date":"2026-10-17"},{"id":"C0174","disclosed":false,"entity":"Crédit Agricole Egypt","country":"Egypt","role":"Head of Treasury","size":"USD $10-$50m","hq":"France","nps":10,"npsClass":"Promoter","intent":"Remain the same","low":0,"sig":{"det":false,"dec":false,"low":false},"nSig":0}]};
+const root = document.getElementById('emcar');
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const BANK = DATA.meta.bank, CRIT = DATA.criteria, ALL = DATA.clients;
+const pct = (a,b) => b ? Math.round(a/b*100) : 0;
+const fmtScore = v => (Math.round(v*100)/100).toFixed(2);
+const slug = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_');
+
+/* ---------- header & caveat ---------- */
+$('ecEntities').textContent = 'Covers all ' + BANK + ' entities rated by clients: ' +
+  DATA.meta.entities.map(e => e[0] + ' (' + e[1] + ')').join(' · ');
+$('ecCaveat').innerHTML = '<b>Live, semi-cleaned data.</b> Results are based on Trade Finance Survey 2027 responses received to ' +
+  esc(DATA.meta.asOf) + ' and are refreshed weekly while the survey is in field. The data has only been partially cleaned, so the demographics of the respondents (country, role, company size and HQ) might not be completely accurate.';
+
+/* ---------- filters ---------- */
+const FK = {country:'All countries', role:'All roles', size:'All company sizes', hq:'All HQ countries'};
+const NOUN = {country:'countries', role:'roles', size:'sizes', hq:'HQ countries'};
+const sel = {country:new Set(), role:new Set(), size:new Set(), hq:new Set()};
+function options(k){
+  const cnt = {};
+  ALL.forEach(c => cnt[c[k]] = (cnt[c[k]]||0)+1);
+  let keys = Object.keys(cnt);
+  if (k === 'size') { const o = DATA.meta.sizeOrder; keys.sort((a,b)=>(o.indexOf(a)<0?99:o.indexOf(a))-(o.indexOf(b)<0?99:o.indexOf(b))); }
+  else keys.sort((a,b)=> (a==='Not stated')-(b==='Not stated') || (a==='Other')-(b==='Other') || a.localeCompare(b));
+  return keys;
+}
+root.querySelectorAll('.ms').forEach(ms => {
+  const k = ms.dataset.k, opts = options(k);
+  ms.innerHTML = '<button type="button" class="msbtn" aria-haspopup="true"><span class="v"></span><span class="car"></span></button>' +
+    '<div class="mspanel">' + (opts.length > 8 ? '<input class="mssearch" placeholder="Search…" aria-label="Search options">' : '') +
+    '<div class="msacts"><button type="button" data-a="all">Select all</button><button type="button" data-a="none">Clear</button></div>' +
+    '<div class="mslist">' + opts.map(o => '<label class="msopt"><input type="checkbox" value="'+esc(o)+'"><span>'+esc(o)+'</span></label>').join('') + '</div></div>';
+  const btn = ms.querySelector('.msbtn');
+  btn.addEventListener('click', e => { e.stopPropagation(); const was = ms.classList.contains('open');
+    root.querySelectorAll('.ms.open').forEach(m=>m.classList.remove('open')); if(!was){ ms.classList.add('open'); const s=ms.querySelector('.mssearch'); if(s) s.focus(); } });
+  ms.querySelector('.mspanel').addEventListener('click', e => e.stopPropagation());
+  ms.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', () => { cb.checked ? sel[k].add(cb.value) : sel[k].delete(cb.value); render(); }));
+  ms.querySelectorAll('.msacts button').forEach(b => b.addEventListener('click', () => {
+    ms.querySelectorAll('.msopt').forEach(l => { if (l.style.display === 'none') return; const cb = l.querySelector('input'); cb.checked = b.dataset.a === 'all'; cb.checked ? sel[k].add(cb.value) : sel[k].delete(cb.value); });
+    render(); }));
+  const s = ms.querySelector('.mssearch');
+  if (s) s.addEventListener('input', () => { const q = s.value.toLowerCase(); ms.querySelectorAll('.msopt').forEach(l => l.style.display = l.textContent.toLowerCase().includes(q) ? '' : 'none'); });
+});
+document.addEventListener('click', () => root.querySelectorAll('.ms.open').forEach(m=>m.classList.remove('open')));
+$('ecReset').addEventListener('click', () => { Object.values(sel).forEach(s=>s.clear()); root.querySelectorAll('.ms input[type=checkbox]').forEach(cb=>cb.checked=false); render(); });
+function filtered(){ return ALL.filter(c => Object.keys(sel).every(k => !sel[k].size || sel[k].has(c[k]))); }
+function filterText(){
+  const parts = Object.keys(sel).filter(k=>sel[k].size).map(k => ({country:'Country',role:'Role',size:'Company size',hq:'Company HQ'})[k] + ': ' + [...sel[k]].join(', '));
+  return parts.length ? parts.join(' · ') : 'No filters applied — all clients';
+}
+
+/* ---------- section 1 ---------- */
+const NPSC = [['Promoter','var(--promo)','9–10'],['Passive','var(--pass)','7–8'],['Detractor','var(--detr)','0–6']];
+const INTC = [['Increase','var(--promo)'],['Remain the same','#A9B8C8'],['Decrease','var(--detr)'],['Not stated','#DDE3EA']];
+function bar(items, n){ return items.filter(i=>i.c>0).map(i => '<span style="width:'+(i.c/n*100)+'%;background:'+i.col+'" title="'+esc(i.l)+': '+i.c+' ('+pct(i.c,n)+'%)"></span>').join(''); }
+function rows(items, n){ return items.map(i => '<div class="lrow'+(i.c?'':' dim')+'"><span class="sw" style="background:'+i.col+'"></span><span>'+esc(i.l)+(i.h?' <span style="color:var(--faint);font-size:11px">'+i.h+'</span>':'')+'</span><span class="c">'+i.c+'</span><span class="p">'+pct(i.c,n)+'%</span></div>').join(''); }
+function renderExec(cs){
+  const n = cs.length;
+  const nps = NPSC.map(([l,col,h]) => ({l, col, h, c: cs.filter(c=>c.npsClass===l).length}));
+  const nNps = nps.reduce((a,b)=>a+b.c,0);
+  const score = nNps ? Math.round((nps[0].c - nps[2].c)/nNps*100) : null;
+  const ne = $('ecNps'); ne.textContent = score==null ? '–' : (score>0?'+':'') + score; ne.className = 'n ' + (score==null?'':score>=0?'pos':'neg');
+  $('ecNpsN').textContent = 'n = ' + nNps;
+  $('ecNpsBar').innerHTML = bar(nps, nNps||1); $('ecNpsRows').innerHTML = rows(nps, nNps);
+  let ints = INTC.map(([l,col]) => ({l, col, c: cs.filter(c=>c.intent===l).length}));
+  if (!ints[3].c) ints = ints.slice(0,3);
+  $('ecDec').textContent = ints[2].c; $('ecDec').className = 'n' + (ints[2].c ? ' neg' : '');
+  $('ecIntBar').innerHTML = bar(ints, n||1); $('ecIntRows').innerHTML = rows(ints, n);
+  const low3 = cs.filter(c=>c.low>=3).length;
+  $('ecLow').textContent = low3; $('ecLowU').innerHTML = pct(low3,n) + '% of<br>' + n + ' clients';
+  const bands = [['None below 8',c=>c.low===0],['1–2 criteria',c=>c.low>=1&&c.low<=2],['3–5 criteria',c=>c.low>=3&&c.low<=5],['6+ criteria',c=>c.low>=6]];
+  const bc = bands.map(([l,f]) => [l, cs.filter(f).length]); const mx = Math.max(1, ...bc.map(b=>b[1]));
+  $('ecHist').innerHTML = bc.map(([l,c],i) => '<div class="hrow'+(i>=2?' hot':'')+'"><span>'+l+'</span><span class="tr"><i style="width:'+(c/mx*100)+'%"></i></span><span class="c">'+c+'</span></div>').join('');
+  const risk = cs.filter(c=>c.nSig>0);
+  $('ecRisk').innerHTML = risk.length + '<small>of ' + n + ' clients (' + pct(risk.length,n) + '%)</small>';
+  const s = k => risk.filter(c=>c.nSig===k).length;
+  const named = risk.filter(c=>c.disclosed).length;
+  $('ecRiskTiles').innerHTML = '<div class="rt s3"><div class="k">All 3 signals</div><div class="v">'+s(3)+'</div></div>' +
+    '<div class="rt s2"><div class="k">2 signals</div><div class="v">'+s(2)+'</div></div>' +
+    '<div class="rt"><div class="k">1 signal</div><div class="v">'+s(1)+'</div></div>' +
+    '<div class="rt"><div class="k">Named (consented) — see section 02</div><div class="v">'+named+'</div></div>';
+  const lb = $('ecLowBase');
+  lb.className = 'lowbase' + (n && n < 10 ? ' on' : ''); lb.textContent = n && n < 10 ? 'Low base: fewer than 10 clients in this selection — interpret with care.' : '';
+  $('ecExF').textContent = filterText() + ' · ' + n + ' clients · Data to ' + DATA.meta.asOf;
+  $('ecExFoot').textContent = 'Semi-cleaned data: based on Trade Finance Survey 2027 responses received to ' + DATA.meta.asOf + '. Respondent demographics might not be completely accurate. Source: Euromoney.';
+  $('ecHero').innerHTML = '<div class="kpi"><div class="lab">Clients</div><div class="val">'+n+'</div></div>' +
+    '<div class="kpi"><div class="lab">NPS</div><div class="val '+(score==null?'':score>=0?'pos':'neg')+'">'+(score==null?'–':(score>0?'+':'')+score)+'</div></div>' +
+    '<div class="kpi"><div class="lab">Named at risk</div><div class="val risk">'+named+'</div></div>';
+}
+
+/* ---------- section 2 ---------- */
+const SIGDEF = {
+  det:['NPS detractor','Scored Crédit Agricole 0–6 on likelihood to recommend'],
+  dec:['Decreasing spend','Plans to reduce trade finance business with Crédit Agricole'],
+  low:['3+ scores below 8.00','Rated three or more assessment criteria below 8.00']
+};
+let current = null;
+function classChip(c){ const m = {Promoter:'pro',Passive:'pas',Detractor:'det'}[c.npsClass]||'nor';
+  return '<span class="classchip '+m+'">'+esc(c.npsClass)+(c.nps!=null?'<span class="s">'+c.nps+'</span>':'')+'</span>'; }
+function prio(c){ return '<span class="prio p'+c.nSig+'"><span class="pdots">'+[1,2,3].map(i=>'<i class="'+(i<=c.nSig?'on':'')+'"></i>').join('')+'</span><span class="plab">'+(c.nSig===3?'High':c.nSig===2?'Medium':'Watch')+'</span></span>'; }
+function sigChips(c){ return '<span class="sigs">'+Object.keys(SIGDEF).filter(k=>c.sig[k]).map(k=>'<span class="sig">'+SIGDEF[k][0]+'</span>').join('')+'</span>'; }
+function intentHtml(c){ const m = c.intent==='Decrease'?'dec':c.intent==='Increase'?'inc':''; return '<span class="intent '+m+'">'+esc(c.intent)+'</span>'; }
+function atRisk(cs){
+  return cs.filter(c=>c.disclosed && c.nSig>0)
+    .sort((a,b)=> b.nSig-a.nSig || b.low-a.low || (a.nps??11)-(b.nps??11) || String(a.name).localeCompare(String(b.name)));
+}
+let listNow = [];
+function renderList(cs){
+  listNow = atRisk(cs);
+  const disc = cs.filter(c=>c.disclosed).length;
+  $('ecDdCount').innerHTML = '<b>'+listNow.length+'</b> named client'+(listNow.length===1?'':'s')+' at risk · ' + disc + ' of ' + cs.length + ' clients in this selection consented to be named';
+  const box = $('ecList');
+  if (!listNow.length){ box.innerHTML = '<div class="card empty">No named clients at risk in this selection.</div>'; return; }
+    box.innerHTML = '<div class="card tblwrap fade"><table><thead><tr><th>Priority</th><th>Client</th><th>' + esc(BANK) + ' entity</th><th>NPS</th><th>Spend intent</th><th class="r">Scores &lt; 8.00</th><th>Signals triggered</th><th></th></tr></thead><tbody>' +
+      listNow.map((c,i) => '<tr class="cr t'+c.nSig+'" tabindex="0" data-i="'+i+'"><td>'+prio(c)+'</td><td><div class="cname">'+esc(c.name)+'</div><div class="cmeta">'+esc(c.hq)+' · '+esc(c.size)+'</div></td><td class="ent">'+esc(c.entity)+'</td><td>'+classChip(c)+'</td><td>'+intentHtml(c)+'</td><td class="r"><span class="num'+(c.low>=3?' bad':'')+'">'+c.low+'</span><span style="color:var(--faint);font-size:11px"> / '+c.scores.length+'</span></td><td>'+sigChips(c)+'</td><td class="r"><span class="open">Deep dive →</span></td></tr>').join('') +
+      '</tbody></table></div>';
+    box.querySelectorAll('tr.cr').forEach(tr => { tr.addEventListener('click', ()=>openDD(listNow[+tr.dataset.i])); tr.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDD(listNow[+tr.dataset.i]); } }); });
+}
+
+/* ---------- deep dive ---------- */
+function critName(s){ return s[2] || CRIT[s[0]].name; }
+function lowest5(c){ return c.scores.map((s,j)=>[s,j]).sort((a,b)=> a[0][1]-b[0][1] || a[1]-b[1]).slice(0,5).map(x=>x[0]); }
+function demo(c){
+  const d = [['Scope of role', c.scope],['Office location', c.office],['Country overseen', c.oversee],['Industry sector', c.industry],
+    ['Company HQ', c.hq !== 'Not stated' ? c.hq : null],['Ownership', c.ownership],['Annual turnover', c.turnover]];
+  return d.filter(x=>x[1]);
+}
+let lastFocus = null;
+function openDD(c){
+  current = c; lastFocus = document.activeElement;
+  $('ecDName').textContent = c.name;
+  $('ecDMeta').textContent = c.entity + ' · listed as trade finance provider #' + c.rank + (c.providers ? ' (client uses ' + c.providers + ' provider' + (c.providers === '1' ? '' : 's') + ')' : '');
+  const sigs = Object.keys(SIGDEF).map(k => {
+    let det = SIGDEF[k][1];
+    if (k==='det') det = 'NPS ' + (c.nps!=null ? c.nps + '/10' : 'not given') + ' — ' + c.npsClass;
+    if (k==='dec') det = (c.intentRaw || 'Not stated') + (c.intentSrc && c.intentSrc.indexOf('volume')>=0 ? ' (overall trade finance volume; sole provider)' : '');
+    if (k==='low') det = c.low + ' of ' + c.scores.length + ' rated criteria below 8.00';
+    return '<div class="sitem '+(c.sig[k]?'on':'off')+'"><span class="ck">'+(c.sig[k]?'✓':'–')+'</span><div><div>'+SIGDEF[k][0]+'</div><div class="sd">'+esc(det)+'</div></div></div>';
+  }).join('');
+  const l5 = lowest5(c);
+  $('ecDBody').innerHTML =
+    '<div class="dcard"><div class="dt"><span>Signals triggered</span><span>'+prio(c)+'</span></div><div class="siglist">'+sigs+'</div></div>' +
+    '<div class="dcard"><div class="dt"><span>5 lowest-scoring criteria</span><span style="text-transform:none;letter-spacing:0;font-weight:500">score / 10</span></div><div class="lowl">' +
+      (l5.length ? l5.map(s => '<div class="lowi'+(s[1]<8?' bad':'')+'"><div class="nm"><small>'+esc(CRIT[s[0]].cat)+'</small>'+esc(critName(s))+'</div><div class="tr"><i style="width:'+(s[1]*10)+'%"></i></div><div class="sc">'+fmtScore(s[1])+'</div></div>').join('') : '<div style="font-size:12.5px;color:var(--muted)">No criteria rated.</div>') +
+    '</div></div>' +
+    '<div class="dcard"><div class="dt"><span>Client profile</span></div><div class="dgrid">' + demo(c).map(([k,v])=>'<div><div class="k">'+k+'</div><div class="v">'+esc(v)+'</div></div>').join('') + '</div></div>' +
+    (c.improve ? '<div class="dcard"><div class="dt"><span>How ' + esc(c.entity) + ' could improve — in the client\'s words</span></div><div class="qa">'+esc(c.improve)+'</div></div>' : '');
+  $('ecOv').classList.add('on'); $('ecDrawer').classList.add('on'); $('ecDBody').scrollTop = 0; $('ecX').focus();
+}
+function closeDD(){ $('ecOv').classList.remove('on'); $('ecDrawer').classList.remove('on'); current = null; if (lastFocus) lastFocus.focus(); }
+$('ecX').addEventListener('click', closeDD); $('ecOv').addEventListener('click', closeDD);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (current) closeDD(); root.querySelectorAll('.ms.open').forEach(m=>m.classList.remove('open')); } });
+
+/* ---------- downloads ---------- */
+function exportRow(c){
+  const r = {
+    'Client': c.name, [BANK + ' entity']: c.entity, 'Priority (signals triggered, of 3)': c.nSig,
+    'Signals triggered': Object.keys(SIGDEF).filter(k=>c.sig[k]).map(k=>SIGDEF[k][0]).join('; '),
+    'NPS score (0-10)': c.nps, 'NPS group': c.npsClass, 'Spend intent (response)': c.intentRaw,
+    'Criteria scored below 8.00': c.low, 'Criteria rated': c.scores.length,
+    'Scope of role': c.scope||'', 'Office location': c.office||'', 'Country overseen': c.oversee||'', 'Industry sector': c.industry||'',
+    'Company HQ': c.hq, 'Ownership': c.ownership||'', 'Annual turnover': c.turnover||'', 'Respondent role': c.role
+  };
+  const l5 = lowest5(c);
+  for (let i=0;i<5;i++){ r['Lowest criterion '+(i+1)] = l5[i] ? CRIT[l5[i][0]].cat + ' - ' + critName(l5[i]) : ''; r['Lowest criterion '+(i+1)+' score'] = l5[i] ? l5[i][1] : ''; }
+  r['Improvement comment'] = c.improve || '';
+  r['Response date'] = c.date || '';
+  return r;
+}
+function fileBase(){ return slug(BANK) + '_named_clients_at_risk_' + new Date().toISOString().slice(0,10); }
+function saveBlob(blob, name){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+const libs = {};
+function loadLib(url, test){
+  if (test()) return Promise.resolve();
+  if (!libs[url]) libs[url] = new Promise((res, rej) => { const s = document.createElement('script'); s.src = url; s.onload = res; s.onerror = () => { delete libs[url]; rej(new Error('Could not load ' + url)); }; document.head.appendChild(s); });
+  return libs[url];
+}
+function toast(m){ const t = $('ecToast'); t.textContent = m; t.classList.add('on'); clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('on'), 3200); }
+root.querySelectorAll('[data-dl]').forEach(b => b.addEventListener('click', async () => {
+  const rows = listNow.map(exportRow);
+  if (!rows.length) { toast('No clients to download in this selection.'); return; }
+  const name = fileBase();
+  if (b.dataset.dl === 'csv'){
+    const h = Object.keys(rows[0]); const q = v => { v = v==null?'':String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; };
+    saveBlob(new Blob(['﻿' + [h.map(q).join(','), ...rows.map(r=>h.map(k=>q(r[k])).join(','))].join('\r\n')], {type:'text/csv;charset=utf-8'}), name + '.csv');
+    return;
+  }
+  b.disabled = true;
+  try {
+    await loadLib('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', () => window.XLSX);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = Object.keys(rows[0]).map(k => ({wch: Math.min(60, Math.max(k.length, ...rows.map(r=>String(r[k]??'').length)) + 2)}));
+    const notes = XLSX.utils.aoa_to_sheet([[BANK + ' — Named clients at risk'],['Euromoney Trade Finance Survey 2027'],['Data to ' + DATA.meta.asOf + '. Semi-cleaned data: respondent demographics might not be completely accurate.'],['Filters: ' + filterText()],['Signals: NPS detractor (0-6); looking to decrease spend with ' + BANK + '; 3+ assessment criteria scored below 8.00.']]);
+    notes['!cols'] = [{wch:110}];
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Clients at risk'); XLSX.utils.book_append_sheet(wb, notes, 'Notes');
+    XLSX.writeFile(wb, name + '.xlsx');
+  } catch (e) { toast('Excel export needs an internet connection — CSV is available offline.'); }
+  b.disabled = false;
+}));
+
+/* ---------- exec export ---------- */
+root.querySelectorAll('[data-exp]').forEach(b => b.addEventListener('click', async () => {
+  const node = $('ecExec'); b.disabled = true;
+  try {
+    await loadLib('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', () => window.html2canvas);
+    if (b.dataset.exp === 'pdf') await loadLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => window.jspdf);
+    node.classList.add('exporting'); node.style.padding = '22px'; node.style.width = '1160px';
+    const canvas = await html2canvas(node, {scale:2, backgroundColor:'#F1F4F8', useCORS:true, logging:false, windowWidth:1240});
+    node.classList.remove('exporting'); node.style.padding = ''; node.style.width = '';
+    const base = slug(BANK) + '_executive_summary_' + new Date().toISOString().slice(0,10);
+    if (b.dataset.exp === 'jpeg') {
+      canvas.toBlob(bl => saveBlob(bl, base + '.jpg'), 'image/jpeg', 0.95);
+    } else {
+      const { jsPDF } = window.jspdf; const pdf = new jsPDF({orientation:'landscape', unit:'pt', format:'a4'});
+      const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight(), m = 24;
+      const r = Math.min((pw-2*m)/canvas.width, (ph-2*m)/canvas.height); const w = canvas.width*r, h = canvas.height*r;
+      pdf.setFillColor(241,244,248); pdf.rect(0,0,pw,ph,'F');
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', (pw-w)/2, m, w, h);
+      pdf.save(base + '.pdf');
+    }
+  } catch (e) { node.classList.remove('exporting'); node.style.padding=''; node.style.width=''; toast('Export needs an internet connection to load the export library.'); }
+  b.disabled = false;
+}));
+
+/* ---------- footer ---------- */
+$('ecFoot').innerHTML = '<b>Source:</b> Euromoney Trade Finance Survey 2027, responses received to ' + esc(DATA.meta.asOf) + ' (dashboard built ' + esc(DATA.meta.built) + '). Semi-cleaned data — respondent demographics might not be completely accurate.<br>' +
+  '<b>Entities included:</b> ' + DATA.meta.entities.map(e=>esc(e[0])).join(', ') + '. Each client is one respondent rating one of these entities.<br>' +
+  '<b>Definitions:</b> NPS groups — Promoters 9–10, Passives 7–8, Detractors 0–6; NPS = % Promoters − % Detractors. Business intention = planned redistribution of trade finance spend for ' + esc(BANK) + '; clients using a single provider are not asked this, so their expected change in total trade finance volume is used instead. Low satisfaction = assessment criteria (product offering, client service and technology) rated below 8.00 out of 10.<br>' +
+  '<b>Named clients:</b> only respondents who ticked full consent for their responses, including personally identifiable information, to be linked to their identity. Other respondents are counted in section 01 only; their names and individual answers are not included in this file.<br>' +
+  '<b>Country</b> = country the respondent oversees (domestic roles) or office location (regional and global roles).';
+
+function render(){
+  root.querySelectorAll('.ms').forEach(ms => { const k = ms.dataset.k, s = sel[k], b = ms.querySelector('.msbtn');
+    b.querySelector('.v').textContent = !s.size ? FK[k] : s.size === 1 ? [...s][0] : s.size + ' ' + NOUN[k]; b.classList.toggle('act', s.size > 0); });
+  $('ecFsum').innerHTML = Object.values(sel).some(s=>s.size) ? 'Showing: <b>' + esc(filterText()) + '</b>' : '';
+  const cs = filtered(); renderExec(cs); renderList(cs);
+}
+render();
+})();
+</script>
+</body>
+</html>
